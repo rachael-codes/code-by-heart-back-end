@@ -1,38 +1,67 @@
-from flask import Blueprint, request, jsonify, make_response
+from flask import Blueprint, request, jsonify, make_response, render_template, url_for, flash, redirect
+from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 from app.models.flashcard import Flashcard
 from app.models.deck import Deck
 from app.models.user import User
+
 import datetime
 
+home_bp = Blueprint("home_bp", __name__, url_prefix="/")
+registration_bp = Blueprint("registration_bp", __name__, url_prefix="/register")
+login_bp = Blueprint("login_bp", __name__, url_prefix="/login")
 users_bp = Blueprint("users_bp", __name__, url_prefix="/users")
 decks_bp = Blueprint("decks_bp", __name__, url_prefix="/decks")
 flashcards_bp = Blueprint("flashcards_bp", __name__, url_prefix="/flashcards")
 
-# Get all users 
+# ------ # ------ # ------ # ------ # ------ # ------ # ------ # ------ # 
+
+# LANDING PAGE AND REGISTRATION ROUTES 
+
+@home_bp.route("", methods=["GET"])
+@home_bp.route("home", methods=["GET"])
+def home():
+    return render_template('home.html')
+
+# Add a user 
+@registration_bp.route("", methods=["POST"])
+def register():
+    request_body = request.get_json()
+
+    #check if username is available; if not, return "unavailable" message to user 
+    requested_username = request_body["user_name"]
+    db_username = User.query.filter_by(user_name=requested_username).first()
+    if db_username is not None:
+        return jsonify({"message": f"'{requested_username}' is unavailable."})
+
+    new_user = User(
+        first_name = request_body["first_name"],
+        last_name = request_body["last_name"],
+        user_name = request_body["user_name"],
+        password = generate_password_hash(request_body["password"])
+    )
+
+    db.session.add(new_user)
+    db.session.commit()
+
+    return new_user.to_json(), 200  
+
+
+@login_bp.route("", methods=["POST"])
+def login():
+    pass 
+
+
+# Get all users (only admin should be able to do this)
 @users_bp.route("", methods=["GET"])
 def users():
     users = User.query.all() 
     user_response = [user.to_json() for user in users]
     return jsonify(user_response), 200
 
-# Add a user 
-@users_bp.route("", methods=["POST"])
-def add_user():
-    request_body = request.get_json()
+# ------ # ------ # ------ # ------ # ------ # ------ # ------ # ------ # 
 
-    new_user = User(
-        first_name = request_body["first_name"],
-        last_name = request_body["last_name"],
-        user_name = request_body["user_name"],
-        password = request_body["password"]
-    )
-
-    db.session.add(new_user)
-    db.session.commit()
-
-    return new_user.to_json(), 200 
-
+# ROUTES FOR FLASHCARDS + DECKS 
 
 # Get all decks 
 @decks_bp.route("", methods=["GET"])
@@ -77,11 +106,30 @@ def delete_deck(deck_id):
 
 
 # Get all flashcards by deck id 
-@decks_bp.route("/<deck_id>/flashcards", methods=["GET"]) 
+@decks_bp.route("/<deck_id>/all_flashcards", methods=["GET"]) 
 def get_flashcards_by_deck(deck_id):
     flashcards = Flashcard.query.filter_by(deck_id=deck_id)
     flashcards_response = [flashcard.to_json() for flashcard in flashcards]
     return jsonify(flashcards_response), 200
+
+
+# Get all flashcards by deck id that have a review date of now or earlier (in JSON format)
+@decks_bp.route("/<deck_id>/flashcards_to_review", methods=["GET"]) 
+def get_flashcards_to_review_by_deck(deck_id):
+    flashcards = Flashcard.query.filter_by(deck_id=deck_id)
+    flashcards = Flashcard.query.filter(Flashcard.date_to_review <= datetime.datetime.now())
+    flashcards_response = [flashcard.to_json() for flashcard in flashcards]
+    return jsonify(flashcards_response), 200
+
+
+# Get NUMBER of flashcards by deck id that have a review date of now or earlier 
+# Note: this will be for display purposes on front-end 
+@decks_bp.route("/<deck_id>/number_of_flashcards_to_review", methods=["GET"]) 
+def get_number_of_flashcards_to_review(deck_id):
+    flashcards = Flashcard.query.filter_by(deck_id=deck_id)
+    flashcards = Flashcard.query.filter(Flashcard.date_to_review <= datetime.datetime.now())
+    flashcards_response = [flashcard.to_json() for flashcard in flashcards]
+    return make_response(str(len(flashcards_response)), 200)
 
 
 # Add a flashcard to a particular deck
@@ -126,19 +174,7 @@ def delete_flashcard(flashcard_id):
     return flashcard.to_json(), 200
 
 
-# Edit flashcard's contents - IN PROGRESS 
-@flashcards_bp.route("/<flashcard_id>", methods=["PUT"])
-def edit_flashcard(flashcard_id):
-    flashcard = Flashcard.query.get(flashcard_id)
-    if not flashcard: 
-        return make_response("", 404)
-
-    # ADD SOMETHING HERE TO ACTUALLY UPDATE THE CARD'S FRONT/BACK 
-
-    return flashcard.to_json(), 200
-
-
-# Update flashcard based on spaced repetition algo - IN PROGRESS 
+# Update flashcard based on spaced repetition algo
 # Example for a medium-difficulty card: http://127.0.0.1:5000/flashcards/2/3
 @flashcards_bp.route("/<flashcard_id>/<user_difficulty_selection>", methods=["PUT"])
 def update_flashcard_spaced_repetition(flashcard_id, user_difficulty_selection):
@@ -149,4 +185,16 @@ def update_flashcard_spaced_repetition(flashcard_id, user_difficulty_selection):
     flashcard.reset_values_based_on_sm2(user_difficulty_selection)
     db.session.commit()
     
+    return flashcard.to_json(), 200
+
+
+# Edit flashcard's contents - IN PROGRESS 
+@flashcards_bp.route("/<flashcard_id>", methods=["PUT"])
+def edit_flashcard(flashcard_id):
+    flashcard = Flashcard.query.get(flashcard_id)
+    if not flashcard: 
+        return make_response("", 404)
+
+    # ADD SOMETHING HERE TO ACTUALLY UPDATE THE CARD'S FRONT/BACK 
+
     return flashcard.to_json(), 200

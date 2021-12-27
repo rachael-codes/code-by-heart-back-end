@@ -2,8 +2,9 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from dotenv import load_dotenv
-import os
 from flask_cors import CORS
+# from flask_bcrypt import Bcrypt
+import os
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -12,6 +13,7 @@ load_dotenv()
 
 def create_app(test_config=None):
     app = Flask(__name__)
+
     app.url_map.strict_slashes = False
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -28,6 +30,7 @@ def create_app(test_config=None):
     from app.models.deck import Deck
 
     db.init_app(app)
+    # bcrypt = Bcrypt(app)
     migrate.init_app(app, db)
 
     # Register Blueprints here
@@ -39,6 +42,15 @@ def create_app(test_config=None):
 
     from app.routes import users_bp
     app.register_blueprint(users_bp)
+
+    from app.routes import home_bp
+    app.register_blueprint(home_bp)
+
+    from app.routes import login_bp
+    app.register_blueprint(login_bp)
+
+    from app.routes import registration_bp
+    app.register_blueprint(registration_bp)
 
     CORS(app)
     return app
