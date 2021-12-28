@@ -116,7 +116,7 @@ def add_deck():
 
     new_deck = Deck(
         name=request_body["name"],
-        owner_id=request_body["owner_id"]
+        owner_name=request_body["owner_name"]
     )
 
     db.session.add(new_deck)
