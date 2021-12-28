@@ -1,42 +1,49 @@
 from flask import Blueprint, request, jsonify, make_response, render_template, url_for, flash, redirect
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, jwt_required
 from app import db
 from app.models.flashcard import Flashcard
 from app.models.deck import Deck
 from app.models.user import User
-
 import datetime
 
-home_bp = Blueprint("home_bp", __name__, url_prefix="/")
-registration_bp = Blueprint("registration_bp", __name__, url_prefix="/register")
-login_bp = Blueprint("login_bp", __name__, url_prefix="/login")
+app_bp = Blueprint('app', __name__)
 users_bp = Blueprint("users_bp", __name__, url_prefix="/users")
 decks_bp = Blueprint("decks_bp", __name__, url_prefix="/decks")
 flashcards_bp = Blueprint("flashcards_bp", __name__, url_prefix="/flashcards")
 
 # ------ # ------ # ------ # ------ # ------ # ------ # ------ # ------ # 
 
-# LANDING PAGE AND REGISTRATION ROUTES 
+# LANDING PAGE, REGISTRATION, AND LOGIN ROUTES 
 
-@home_bp.route("", methods=["GET"])
-@home_bp.route("home", methods=["GET"])
+@app_bp.route("/", methods=["GET"])
+@app_bp.route("/home", methods=["GET"])
 def home():
     return render_template('home.html')
 
-# Add a user 
-@registration_bp.route("", methods=["POST"])
+
+# Register a new user + add them to DB 
+@app_bp.route("/register", methods=["POST"])
 def register():
     request_body = request.get_json()
 
-    #check if username is available; if not, return "unavailable" message to user 
+    #check if username is available; if already taken, return message to user 
     requested_username = request_body["user_name"]
     db_username = User.query.filter_by(user_name=requested_username).first()
     if db_username is not None:
         return jsonify({"message": f"'{requested_username}' is unavailable."})
+    
+    # check that email isn't already in use 
+    requested_email = request_body["email"]
+    db_email = User.query.filter_by(email=requested_email).first()
+    if db_email is not None:
+        return jsonify({"message": f"There is already an account associated \
+with '{requested_email}'."})
 
     new_user = User(
         first_name = request_body["first_name"],
         last_name = request_body["last_name"],
+        email = request_body["email"],
         user_name = request_body["user_name"],
         password = generate_password_hash(request_body["password"])
     )
@@ -44,12 +51,27 @@ def register():
     db.session.add(new_user)
     db.session.commit()
 
-    return new_user.to_json(), 200  
+    return jsonify({"message": "User created successfully."}) 
 
 
-@login_bp.route("", methods=["POST"])
+# User login and create access tokens 
+@app_bp.route("/login", methods=["POST"])
 def login():
-    pass 
+    request_body = request.get_json()
+    attempted_username = request_body["user_name"]
+    attempted_pw = request_body["password"]
+
+    db_user = User.query.filter_by(user_name=attempted_username).first()
+    if db_user and check_password_hash(db_user.password, attempted_pw): 
+        access_token = create_access_token(identity=db_user.user_name)
+        refresh_token = create_refresh_token(identity=db_user.user_name)
+
+        return jsonify(
+            { "access_token" : access_token,
+            "refresh_token" : refresh_token }
+        )
+    
+    return jsonify({"Message" : "Bad username or password"}), 401
 
 
 # Get all users (only admin should be able to do this)
@@ -63,9 +85,18 @@ def users():
 
 # ROUTES FOR FLASHCARDS + DECKS 
 
+# TO-DO:
+# TEST THIS ROUTE
+@decks_bp.route("/<owner_name>/decks", methods=["GET"])
+def decks(owner_name):
+    decks = Deck.query.filter_by(owner_name=owner_name) 
+    deck_response = [deck.to_json() for deck in decks]
+    return jsonify(deck_response), 200
+
+
 # Get all decks 
 @decks_bp.route("", methods=["GET"])
-def decks():
+def all_decks():
     decks = Deck.query.all() 
     deck_response = [deck.to_json() for deck in decks]
     return jsonify(deck_response), 200

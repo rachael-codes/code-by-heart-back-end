@@ -3,8 +3,9 @@ from sqlalchemy.orm import backref
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    first_name = db.Column(db.String)
-    last_name = db.Column(db.String)
+    first_name = db.Column(db.String, nullable=False)
+    last_name = db.Column(db.String, nullable=False)
+    email = db.Column(db.String, unique=True, nullable=False)
     user_name = db.Column(db.String, unique=True, nullable=False)
     password = db.Column(db.Text, nullable=False)
     decks = db.relationship("Deck", backref="user", lazy=True)
