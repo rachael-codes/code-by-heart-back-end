@@ -26,12 +26,6 @@ def home():
 @app_bp.route("/register", methods=["POST"])
 def register():
     request_body = request.get_json()
-
-    #check if username is available; if already taken, return message to user 
-    requested_username = request_body["user_name"]
-    db_username = User.query.filter_by(user_name=requested_username).first()
-    if db_username is not None:
-        return jsonify({"message": f"'{requested_username}' is unavailable."})
     
     # check that email isn't already in use 
     requested_email = request_body["email"]
@@ -41,10 +35,7 @@ def register():
 with '{requested_email}'."})
 
     new_user = User(
-        first_name = request_body["first_name"],
-        last_name = request_body["last_name"],
         email = request_body["email"],
-        user_name = request_body["user_name"],
         password = generate_password_hash(request_body["password"])
     )
 
@@ -58,20 +49,17 @@ with '{requested_email}'."})
 @app_bp.route("/login", methods=["POST"])
 def login():
     request_body = request.get_json()
-    attempted_username = request_body["user_name"]
+    attempted_email = request_body["email"]
     attempted_pw = request_body["password"]
 
-    db_user = User.query.filter_by(user_name=attempted_username).first()
+    db_user = User.query.filter_by(email=attempted_email).first()
     if db_user and check_password_hash(db_user.password, attempted_pw): 
-        access_token = create_access_token(identity=db_user.user_name)
-        refresh_token = create_refresh_token(identity=db_user.user_name)
+        access_token = create_access_token(identity=db_user.email)
+        # refresh_token = create_refresh_token(identity=db_user.user_name)
 
-        return jsonify(
-            { "access_token" : access_token,
-            "refresh_token" : refresh_token }
-        )
+        return jsonify({ "access_token" : access_token })
     
-    return jsonify({"Message" : "Bad username or password"}), 401
+    return jsonify({"Message" : "Bad email or password"}), 401
 
 
 # Get all users (only admin should be able to do this)
@@ -85,16 +73,31 @@ def users():
 
 # ROUTES FOR FLASHCARDS + DECKS 
 
-# TO-DO:
-# TEST THIS ROUTE
-@decks_bp.route("/<owner_name>/decks", methods=["GET"])
-def decks(owner_name):
-    decks = Deck.query.filter_by(owner_name=owner_name) 
-    deck_response = [deck.to_json() for deck in decks]
-    return jsonify(deck_response), 200
+# Example: http://127.0.0.1:5000/decks/rmcbride0
+# Get all decks by user's email or add a deck to user's deck collection
+@decks_bp.route("/<owner_email>", methods=["GET", "POST"])
+def decks(owner_email):
+    if request.method == "GET":
+        decks = Deck.query.filter_by(owner_email=owner_email) 
+        deck_response = [deck.to_json() for deck in decks]
+        return jsonify(deck_response), 200
+
+    elif request.method == "POST":  
+        request_data = request.get_json()
+
+        new_deck = Deck(
+            name=request_data["name"],
+            owner_email=owner_email
+        )
+
+        db.session.add(new_deck)
+        db.session.commit()
+
+        return new_deck.to_json(), 200
 
 
-# Get all decks 
+# Get all decks regardless of username 
+# (only admin should be able to do this)
 @decks_bp.route("", methods=["GET"])
 def all_decks():
     decks = Deck.query.all() 
@@ -107,22 +110,6 @@ def all_decks():
 def deck(deck_id):
     deck = Deck.query.get(deck_id) 
     return deck.to_json(), 200
-
-
-# Add a deck 
-@decks_bp.route("", methods=["POST"])
-def add_deck():
-    request_body = request.get_json()
-
-    new_deck = Deck(
-        name=request_body["name"],
-        owner_name=request_body["owner_name"]
-    )
-
-    db.session.add(new_deck)
-    db.session.commit()
-
-    return new_deck.to_json(), 200
 
 
 # Delete a deck 
