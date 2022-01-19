@@ -3,7 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager
 import os
 
 db = SQLAlchemy()
@@ -13,13 +12,10 @@ load_dotenv()
 
 def create_app(test_config=None):
     app = Flask(__name__)
-
+    
     app.url_map.strict_slashes = False
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-    # Configure JWT manager
-    app.config["SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
-    JWTManager(app)
+    app.config['CORS_HEADERS'] = 'Content-Type'
 
     # Configure database 
     if test_config is None:
@@ -31,9 +27,11 @@ def create_app(test_config=None):
             "SQLALCHEMY_TEST_DATABASE_URI")
 
     # Import models here for Alembic setup
+    from app.models.client import Client
     from app.models.flashcard import Flashcard
     from app.models.deck import Deck
-    from app.models.user import User 
+
+
 
     db.init_app(app)
     migrate.init_app(app, db)

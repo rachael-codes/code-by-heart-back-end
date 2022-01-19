@@ -1,13 +1,3 @@
-# Credit to https://github.com/thyagoluciano/sm2 for explanation of SM2, 
-# which the reset_values_based_on_sm2 method below is based on
-# Key for difficult level values:
-    # 5 - very easy 
-    # 4 - easy 
-    # 3 - medium 
-    # 2 - hard 
-    # 1 - very hard 
-    # 0 - complete blackout  
-
 from app import db
 from sqlalchemy.orm import backref
 from datetime import datetime, timedelta
@@ -72,3 +62,12 @@ class Flashcard(db.Model):
         }
 
             
+# Credit to https://github.com/thyagoluciano/sm2 for explanation of SM2, 
+# which the reset_values_based_on_sm2 method above is based on
+# Key for difficult level values:
+    # 5 - very easy 
+    # 4 - easy 
+    # 3 - medium 
+    # 2 - hard 
+    # 1 - very hard 
+    # 0 - complete blackout 
