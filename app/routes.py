@@ -18,6 +18,7 @@ flashcards_bp = Blueprint("flashcards_bp", __name__, url_prefix="/flashcards")
 @app_bp.route("/load_decks", methods=["POST"])
 def load_decks():
     request_body = request.get_json()
+    print(request_body)
 
     # Check if user is already in the DB, and if so, load their decks...
     client_in_db = Client.query.filter_by(email=request_body["email"]).first()
@@ -194,22 +195,28 @@ def decks(owner_id):
 
 # ------ # ------ # ------ # ------ # ------ # ------ # ------ # ------ # 
 
-# Route to run code through Jdoodle's compiler! 
-@app_bp.route("/compile/<selected_language>", methods=["GET"])
-def compile(selected_language):
+# Route to run Python code through Jdoodle's compiler! 
+@app_bp.route("/compile", methods=["POST"])
+def compile():
+    '''
+    Purpose: Calls Jdoodle Code Compiler API
+    Returns: either an empty string (if there was no `print` statement), 
+            a string error message (if the code couldn't be compiled),
+            or some string output (if code was compiled AND there was a print statement)
+    '''
+
     path = "https://api.jdoodle.com/v1/execute"
+    code_to_compile = request.get_json()["code"]
 
     payload = {
-        "script": "console.log('bananas')", # change to string that gets passed
+        "script": f"{code_to_compile}", 
         "stdin": "",
-        "language": "nodejs", # change to selected_language that gets passed
-        "versionIndex": "0", # change based on selected_language
+        "language": "python3", # could change to selected_language that gets passed
+        "versionIndex": "3", # could also change based on selected_language
         "clientId": "a3462eccc82ecc57a745a23e52c5c71e",
         "clientSecret": "36e5a2e2aad579e0729ff01dea46389bcf332cc09420cf331ceaeb332a3f3e3a"
     }
-
     headers = {"Content-Type" : "application/json"}
 
-
     response = requests.post(url=path, headers=headers, data=json.dumps(payload))
-    return response.json()
+    return response.json()["output"] 
