@@ -31,23 +31,26 @@ def create_app(test_config=None):
     from app.models.flashcard import Flashcard
     from app.models.deck import Deck
 
-
-
     db.init_app(app)
     migrate.init_app(app, db)
 
     # Register blueprints 
-    from app.routes import decks_bp
+    from app.routes.other_routes import decks_bp
     app.register_blueprint(decks_bp)
 
-    from app.routes import flashcards_bp
+    from app.routes.other_routes import flashcards_bp
     app.register_blueprint(flashcards_bp)
 
-    from app.routes import users_bp
+    from app.routes.other_routes import users_bp
     app.register_blueprint(users_bp)
 
-    from app.routes import app_bp
+    from app.routes.other_routes import app_bp
     app.register_blueprint(app_bp)
+
+    from app.routes.compile_route import compiler_bp
+    app.register_blueprint(compiler_bp)
+
+
 
     CORS(app)
     return app
