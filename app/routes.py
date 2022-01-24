@@ -84,23 +84,26 @@ def decks(owner_id):
 #     return deck.to_json(), 200
 
 
-# # Delete a deck 
-# @decks_bp.route("/<deck_id>", methods=["DELETE"])
-# def delete_deck(deck_id):
-#     deck = Deck.query.get(deck_id)
+# Delete a deck 
+@decks_bp.route("/<deck_id>", methods=["DELETE"])
+def delete_deck(deck_id):
+    deck = Deck.query.get(deck_id)
 
-#     db.session.delete(deck)
-#     db.session.commit()
+    db.session.delete(deck)
+    db.session.commit()
 
-#     return deck.to_json(), 200
+    return deck.to_json(), 200
 
 
-# # Get all flashcards by deck id 
-# @decks_bp.route("/<deck_id>/all_flashcards", methods=["GET"]) 
-# def get_flashcards_by_deck(deck_id):
-#     flashcards = Flashcard.query.filter_by(deck_id=deck_id)
-#     flashcards_response = [flashcard.to_json() for flashcard in flashcards]
-#     return jsonify(flashcards_response), 200
+# Get all flashcards by deck id 
+@decks_bp.route("/<deck_id>/flashcards", methods=["GET"]) 
+def get_flashcards_by_deck(deck_id):
+    if not deck_id:
+        return jsonify({"message" : "The user hasn't selected a deck yet."})
+
+    flashcards = Flashcard.query.filter_by(deck_id=deck_id)
+    flashcards_response = [flashcard.to_json() for flashcard in flashcards]
+    return jsonify(flashcards_response), 200
 
 
 # # Get all flashcards by deck id that have a review date of now or earlier (in JSON format)
@@ -122,26 +125,28 @@ def decks(owner_id):
 #     return make_response(str(len(flashcards_response)), 200)
 
 
-# # Add a flashcard to a particular deck
-# @decks_bp.route("/<deck_id>/flashcards", methods=["POST"])
-# def add_flashcard_to_deck(deck_id):
-#     request_data = request.get_json()
+# Add a flashcard to a particular deck
+@decks_bp.route("/<deck_id>/flashcards", methods=["POST"])
+def add_flashcard_to_deck(deck_id):
+    request_data = request.get_json()
+    print(request_data)
+    # shape => { "front": flashcardFront, "back": flashcardBack }
 
-#     flashcard = Flashcard(
-#         front = request_data['front'],
-#         back = request_data['back'],
-#         deck_id = deck_id,
-#         difficulty_level = 0,
-#         previous_repetitions = 0,
-#         previous_ease_factor = 2.5,
-#         interval = 0,
-#         date_to_review = datetime.datetime.now()
-#     )
+    flashcard = Flashcard(
+        front = request_data['front'],
+        back = request_data['back'],
+        deck_id = int(deck_id),
+        difficulty_level = 0,
+        previous_repetitions = 0,
+        previous_ease_factor = 2.5,
+        interval = 0,
+        date_to_review = datetime.datetime.now()
+    )
 
-#     db.session.add(flashcard)
-#     db.session.commit()
+    db.session.add(flashcard)
+    db.session.commit()
 
-#     return flashcard.to_json(), 200
+    return flashcard.to_json(), 200
 
 
 # # Get one flashcard 
@@ -151,17 +156,17 @@ def decks(owner_id):
 #     return flashcard.to_json(), 200
 
 
-# # Delete one flashcard
-# @flashcards_bp.route("/<flashcard_id>", methods=["DELETE"])
-# def delete_flashcard(flashcard_id):
-#     flashcard = Flashcard.query.get(flashcard_id)
-#     if not flashcard: 
-#         return make_response("", 404)
+# Delete one flashcard
+@flashcards_bp.route("/<flashcard_id>", methods=["DELETE"])
+def delete_flashcard(flashcard_id):
+    flashcard = Flashcard.query.get(int(flashcard_id))
+    if not flashcard: 
+        return make_response("", 404)
 
-#     db.session.delete(flashcard)
-#     db.session.commit()
+    db.session.delete(flashcard)
+    db.session.commit()
 
-#     return flashcard.to_json(), 200
+    return flashcard.to_json(), 200
 
 
 # # Update flashcard based on spaced repetition algo
@@ -204,19 +209,22 @@ def compile():
             a string error message (if the code couldn't be compiled),
             or some string output (if code was compiled AND there was a print statement)
     '''
-
     path = "https://api.jdoodle.com/v1/execute"
-    code_to_compile = request.get_json()["code"]
+    request_body = request.get_json()
+    code_to_compile, language = request_body["code"], request_body["language"]
+    if language == 'python': # Note: Python is only special case that needs a num. 
+        language = 'python3'
 
     payload = {
         "script": f"{code_to_compile}", 
         "stdin": "",
-        "language": "python3", # could change to selected_language that gets passed
-        "versionIndex": "3", # could also change based on selected_language
+        "language": f"{language}",
+        "versionIndex": "3", 
         "clientId": "a3462eccc82ecc57a745a23e52c5c71e",
         "clientSecret": "36e5a2e2aad579e0729ff01dea46389bcf332cc09420cf331ceaeb332a3f3e3a"
     }
     headers = {"Content-Type" : "application/json"}
-
     response = requests.post(url=path, headers=headers, data=json.dumps(payload))
+
+    # handle error so something still gets returned to front-end in case of 404 
     return response.json()["output"] 
