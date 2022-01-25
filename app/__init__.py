@@ -35,22 +35,14 @@ def create_app(test_config=None):
     migrate.init_app(app, db)
 
     # Register blueprints 
-    from app.routes.other_routes import decks_bp
-    app.register_blueprint(decks_bp)
-
-    from app.routes.other_routes import flashcards_bp
-    app.register_blueprint(flashcards_bp)
-
-    from app.routes.other_routes import users_bp
-    app.register_blueprint(users_bp)
-
     from app.routes.other_routes import app_bp
     app.register_blueprint(app_bp)
+    
+    from app.routes.deck_routes import decks_bp
+    app.register_blueprint(decks_bp)
 
-    from app.routes.compile_route import compiler_bp
-    app.register_blueprint(compiler_bp)
-
-
+    from app.routes.flashcard_routes import flashcards_bp
+    app.register_blueprint(flashcards_bp)
 
     CORS(app)
     return app

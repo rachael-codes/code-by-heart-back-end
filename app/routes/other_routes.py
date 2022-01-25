@@ -1,29 +1,32 @@
-from flask import Blueprint, request, jsonify, make_response, render_template
+from flask import Blueprint, request, jsonify
 from app import db
-from app.models.flashcard import Flashcard
+import requests, json
+import re 
+import os 
+from dotenv import load_dotenv
 from app.models.deck import Deck
 from app.models.client import Client
-import datetime
-import requests, json
 
 app_bp = Blueprint('app', __name__)
-users_bp = Blueprint("users_bp", __name__, url_prefix="/users")
-decks_bp = Blueprint("decks_bp", __name__, url_prefix="/decks")
-flashcards_bp = Blueprint("flashcards_bp", __name__, url_prefix="/flashcards")
 
-# ------ # ------ # ------ # ------ # ------ # ------ # ------ # ------ # 
-
-# Route to check if a user is in the DB once Google authenticates them...
-# Takes a JSON obj w/ the user's: `id`, `email`, and `displayName` (Google provides this)
-@app_bp.route("/load_decks", methods=["POST"])
+@app_bp.route("/load-user-decks", methods=["POST"])
 def load_decks():
+    '''
+    Purpose: Checks if a user is in the DB (after Google authenticates them
+    in the frontend), and then either:
+        1) returns an array of user's decks (if user was already in the DB) 
+        OR
+        2) adds the user to the DB and returns an empty array of decks for 
+        the user to start out with 
+
+    request_body = { "id" : id, "email" : email, "displayName" : displayName }
+    '''
     request_body = request.get_json()
-    print(request_body)
 
     # Check if user is already in the DB, and if so, load their decks...
-    client_in_db = Client.query.filter_by(email=request_body["email"]).first()
-    if client_in_db:
-        decks = Deck.query.filter_by(owner_id=client_in_db.id) 
+    client = Client.query.filter_by(email=request_body["email"]).first()
+    if client:
+        decks = Deck.query.filter_by(owner_id=client.id) 
         response = jsonify([deck.to_json() for deck in decks])
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response, 200
@@ -39,160 +42,62 @@ def load_decks():
 
     response = jsonify([]) # new clients should start out with empty decks array
     response.headers.add("Access-Control-Allow-Origin", "*")
-    return response
+    return response, 200
 
-# ------ # ------ # ------ # ------ # ------ # ------ # ------ # ------ # 
+# ---------- # ---------- # ---------- # ---------- # ---------- # ---------- # 
 
-# ROUTES FOR FLASHCARDS + DECKS 
+# helper used in compile route immediately below
+def clean_error_message(msg):
+    match = (re.search("jdoodle", msg))
+    ending_idx = match.span()[1]
+    return msg[ending_idx+1:]
 
-# Example: http://127.0.0.1:5000/decks/4iaQSSR69TQcxrHhezdeBZN59hI2
-# Either get all decks by client's id or add a deck to client's deck collection
-@decks_bp.route("/<owner_id>", methods=["GET", "POST"])
-def decks(owner_id):
-    if request.method == "GET":
-        decks = Deck.query.filter_by(owner_id=owner_id) 
-        deck_response = [deck.to_json() for deck in decks]
-        return jsonify(deck_response), 200
+# Runs code via Jdoodle's compiler API
+@app_bp.route("/compile", methods=["POST"])
+def compile():
+    '''
+    Purpose: Calls Jdoodle Code Compiler API
+    Returns: either an empty string (if there was no `print` statement), 
+            a string error message (if the code couldn't be compiled),
+            or some string output (if code was compiled + there was a `print`)
+    '''
+    path = "https://api.jdoodle.com/v1/execute"
+    request_body = request.get_json()
+    code_to_compile, language = request_body["code"], request_body["language"]
+    if language == 'python': # Note: python is special case that needs a num
+        language = 'python3'
 
-    elif request.method == "POST":  
-        request_data = request.get_json()
+    payload = {
+        "script": f"{code_to_compile}", 
+        "stdin": "",
+        "language": f"{language}",
+        "versionIndex": "3", 
+        "clientId": os.environ.get("JDOODLE_CLIENT_ID"),
+        "clientSecret": os.environ.get("JDOODLE_CLIENT_SECRET")
+    }
+    headers = {"Content-Type" : "application/json"}
+    response = requests.post(url=path, headers=headers, data=json.dumps(payload))
 
-        new_deck = Deck(
-            deck_name=request_data["deck_name"],
-            owner_id=owner_id
-        )
+    # get either code output or error message output; if error message, shorten it 
+    frontend_output = response.json()["output"] 
+    if "jdoodle" in frontend_output:
+        if language == 'python3': # as usual, python is an exception
+            return f"\"{clean_error_message(frontend_output)}"
+        else:
+            return clean_error_message(frontend_output)
 
-        db.session.add(new_deck)
-        db.session.commit()
+    # return custom message in case of infinite loop 
+    if "output Limit reached." in frontend_output:
+        return "You reached your output limit. Did you create an infinite loop?"
 
-        return new_deck.to_json(), 200
-
-
-# # Get all decks regardless of client name 
-# # (only admin should be able to do this)
-# @decks_bp.route("", methods=["GET"])
-# def all_decks():
-#     decks = Deck.query.all() 
-#     deck_response = [deck.to_json() for deck in decks]
-#     return jsonify(deck_response), 200
-
-
-# # Get one deck 
-# @decks_bp.route("/<deck_id>", methods=["GET"])
-# def deck(deck_id):
-#     deck = Deck.query.get(deck_id) 
-#     return deck.to_json(), 200
-
-
-# Delete a deck 
-@decks_bp.route("/<deck_id>", methods=["DELETE"])
-def delete_deck(deck_id):
-    deck = Deck.query.get(deck_id)
-
-    db.session.delete(deck)
-    db.session.commit()
-
-    return deck.to_json(), 200
-
-
-# Get all flashcards by deck id 
-@decks_bp.route("/<deck_id>/flashcards", methods=["GET"]) 
-def get_flashcards_by_deck(deck_id):
-    if not deck_id:
-        return jsonify({"message" : "The user hasn't selected a deck yet."})
-
-    flashcards = Flashcard.query.filter_by(deck_id=deck_id)
-    flashcards_response = [flashcard.to_json() for flashcard in flashcards]
-    return jsonify(flashcards_response), 200
-
-
-# # Get all flashcards by deck id that have a review date of now or earlier (in JSON format)
-# @decks_bp.route("/<deck_id>/flashcards_to_review", methods=["GET"]) 
-# def get_flashcards_to_review_by_deck(deck_id):
-#     flashcards = Flashcard.query.filter_by(deck_id=deck_id)
-#     flashcards = Flashcard.query.filter(Flashcard.date_to_review <= datetime.datetime.now())
-#     flashcards_response = [flashcard.to_json() for flashcard in flashcards]
-#     return jsonify(flashcards_response), 200
-
-
-# # Get NUMBER of flashcards by deck id that have a review date of now or earlier 
-# # Note: this will be for display purposes on front-end 
-# @decks_bp.route("/<deck_id>/number_of_flashcards_to_review", methods=["GET"]) 
-# def get_number_of_flashcards_to_review(deck_id):
-#     flashcards = Flashcard.query.filter_by(deck_id=deck_id)
-#     flashcards = Flashcard.query.filter(Flashcard.date_to_review <= datetime.datetime.now())
-#     flashcards_response = [flashcard.to_json() for flashcard in flashcards]
-#     return make_response(str(len(flashcards_response)), 200)
-
-
-# Add a flashcard to a particular deck
-@decks_bp.route("/<deck_id>/flashcards", methods=["POST"])
-def add_flashcard_to_deck(deck_id):
-    request_data = request.get_json()
-    print(request_data)
-    # shape => { "front": flashcardFront, "back": flashcardBack, "language" : language }
-
-    flashcard = Flashcard(
-        front = request_data['front'],
-        back = request_data['back'],
-        language = request_data['language'],
-        deck_id = int(deck_id),
-        difficulty_level = 0,
-        previous_repetitions = 0,
-        previous_ease_factor = 2.5,
-        interval = 0,
-        date_to_review = datetime.datetime.now()
-    )
-
-    db.session.add(flashcard)
-    db.session.commit()
-
-    return flashcard.to_json(), 200
-
-
-# Get one flashcard 
-@flashcards_bp.route("/<flashcard_id>", methods=["GET"])
-def get_flashcard(flashcard_id):
-    flashcard = Flashcard.query.get(flashcard_id)
-    return flashcard.to_json(), 200
-
-
-# Delete one flashcard
-@flashcards_bp.route("/<flashcard_id>", methods=["DELETE"])
-def delete_flashcard(flashcard_id):
-    flashcard = Flashcard.query.get(flashcard_id)
-    if not flashcard: 
-        return make_response("flashcard not found", 404)
-
-    db.session.delete(flashcard)
-    db.session.commit()
-
-    return make_response("flashcard deleted", 200)
+    # TO-DO: handle error so something still gets returned to front-end in case of 404
+    print(frontend_output) 
+    return frontend_output
 
 
 
-# Update flashcard based on spaced repetition algo
-@flashcards_bp.route("/<flashcard_id>", methods=["PUT"])
-def update_flashcard_spaced_repetition(flashcard_id):
-    user_difficulty_choice = request.get_json()["difficultyString"] 
-
-    flashcard = Flashcard.query.get(flashcard_id)
-    if not flashcard: 
-        return make_response("Card not found.", 404)
-
-    flashcard.reset_values_based_on_sm2(user_difficulty_choice)
-    db.session.commit()
-    
-    return flashcard.to_json(), 200
 
 
-# # Edit flashcard's contents - IN PROGRESS 
-# @flashcards_bp.route("/<flashcard_id>", methods=["PUT"])
-# def edit_flashcard(flashcard_id):
-#     flashcard = Flashcard.query.get(flashcard_id)
-#     if not flashcard: 
-#         return make_response("", 404)
 
-#     # ADD SOMETHING HERE TO ACTUALLY UPDATE THE CARD'S FRONT/BACK 
 
-#     return flashcard.to_json(), 200
+

@@ -1,5 +1,4 @@
 from app import db
-from sqlalchemy.orm import backref
 from datetime import datetime, timedelta
 
 class Flashcard(db.Model):
@@ -24,7 +23,7 @@ class Flashcard(db.Model):
         }
         difficulty_level = DIFFICULTY_LEVEL_MAP[user_difficulty_choice]
 
-        # If user chooses "medium" to "very easy" as the card's level of difficulty...
+        # If user chooses "very easy" to "medium"...
         if difficulty_level >= 3:
             # Reset interval 
             if self.previous_repetitions == 0:
@@ -46,15 +45,19 @@ class Flashcard(db.Model):
                 self.previous_ease_factor = 1.3
             else:
                 self.previous_ease_factor = new_ease_factor
-        elif difficulty_level == 1: # hard 
+
+        # If user chooses "hard"...    
+        elif difficulty_level == 1: 
             self.previous_repetitions = 0 # reset reps to 0
             self.interval = 1 # reset interval to 1
             # no change in ease factor 
-        else: # too hard/review again today 
+
+        # If user chooses "too hard/review again!"...  
+        else: 
             self.previous_repetitions = 0 # reset reps to 0
             self.interval = 0 # reset interval to 1
 
-        # Reset date when card should be reviewed again based on `interval` attribute
+        # Reset date when card should be reviewed again based on `interval`
         self.date_to_review = datetime.now() + timedelta(days=self.interval)
         self.difficulty_level = difficulty_level
 
@@ -72,13 +75,5 @@ class Flashcard(db.Model):
             "date_to_review" : self.date_to_review
         }
 
-            
 # Credit to https://github.com/thyagoluciano/sm2 for explanation of SM2, 
 # which the reset_values_based_on_sm2 method above is based on
-# Key for difficult level values:
-    # 5 - very easy 
-    # 4 - easy 
-    # 3 - medium 
-    # 2 - hard 
-    # 1 - very hard 
-    # 0 - complete blackout 
