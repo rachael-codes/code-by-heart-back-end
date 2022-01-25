@@ -14,11 +14,18 @@ class Flashcard(db.Model):
     interval = db.Column(db.Integer) # 0 to start; will be recalculated based on user's choice; indicates the number of days to wait between reviews
     date_to_review = db.Column(db.DateTime) # date/time of card creation to start; will be recalculated based on interval attribute (immediately above) 
 
-    def reset_values_based_on_sm2(self, user_difficulty_level_choice):
-        user_difficulty_level_choice = int(user_difficulty_level_choice)
+    def reset_values_based_on_sm2(self, user_difficulty_choice):
+        DIFFICULTY_LEVEL_MAP = {
+            "Very Easy" : 5,
+            "Easy" : 4,
+            "Medium" : 3,
+            "Hard" : 1,
+            "Too hard/review again!" : 0
+        }
+        difficulty_level = DIFFICULTY_LEVEL_MAP[user_difficulty_choice]
 
         # If user chooses "medium" to "very easy" as the card's level of difficulty...
-        if user_difficulty_level_choice >= 3:
+        if difficulty_level >= 3:
             # Reset interval 
             if self.previous_repetitions == 0:
                 self.interval = 1 
@@ -33,21 +40,23 @@ class Flashcard(db.Model):
 
             # Reset ease factor 
             new_ease_factor = self.previous_ease_factor +\
-                (0.1 - (5 - user_difficulty_level_choice) *\
-                (0.08 + (5 - user_difficulty_level_choice) * 0.02))
+                (0.1 - (5 - difficulty_level) *\
+                (0.08 + (5 - difficulty_level) * 0.02))
             if new_ease_factor < 1.3:
                 self.previous_ease_factor = 1.3
             else:
                 self.previous_ease_factor = new_ease_factor
-
-        else: # If user chooses "complete blackout" to "hard"...
+        elif difficulty_level == 1: # hard 
             self.previous_repetitions = 0 # reset reps to 0
             self.interval = 1 # reset interval to 1
             # no change in ease factor 
+        else: # too hard/review again today 
+            self.previous_repetitions = 0 # reset reps to 0
+            self.interval = 0 # reset interval to 1
 
         # Reset date when card should be reviewed again based on `interval` attribute
         self.date_to_review = datetime.now() + timedelta(days=self.interval)
-        self.difficulty_level = user_difficulty_level_choice
+        self.difficulty_level = difficulty_level
 
     def to_json(self):
         return {

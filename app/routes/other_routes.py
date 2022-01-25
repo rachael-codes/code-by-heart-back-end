@@ -170,18 +170,20 @@ def delete_flashcard(flashcard_id):
     return make_response("flashcard deleted", 200)
 
 
-# # Update flashcard based on spaced repetition algo
-# # Example for a medium-difficulty card: http://127.0.0.1:5000/flashcards/2/3
-# @flashcards_bp.route("/<flashcard_id>/<user_difficulty_selection>", methods=["PUT"])
-# def update_flashcard_spaced_repetition(flashcard_id, user_difficulty_selection):
-#     flashcard = Flashcard.query.get(flashcard_id)
-#     if not flashcard: 
-#         return make_response("Card not found.", 404)
 
-#     flashcard.reset_values_based_on_sm2(user_difficulty_selection)
-#     db.session.commit()
+# Update flashcard based on spaced repetition algo
+@flashcards_bp.route("/<flashcard_id>", methods=["PUT"])
+def update_flashcard_spaced_repetition(flashcard_id):
+    user_difficulty_choice = request.get_json()["difficultyString"] 
+
+    flashcard = Flashcard.query.get(flashcard_id)
+    if not flashcard: 
+        return make_response("Card not found.", 404)
+
+    flashcard.reset_values_based_on_sm2(user_difficulty_choice)
+    db.session.commit()
     
-#     return flashcard.to_json(), 200
+    return flashcard.to_json(), 200
 
 
 # # Edit flashcard's contents - IN PROGRESS 
