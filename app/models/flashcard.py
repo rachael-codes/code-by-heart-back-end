@@ -6,6 +6,7 @@ class Flashcard(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     front = db.Column(db.Text)
     back = db.Column(db.Text)
+    language = db.Column(db.Text)
     deck_id = db.Column(db.Integer, db.ForeignKey("deck.id"))
     difficulty_level = db.Column(db.Integer) # 0 to start then will update to whatever user's choice is (on a scale of 0 to 5)
     previous_repetitions = db.Column(db.Integer) # 0 to start; will be incremented by 1 or reset to 0 based on user's choice
