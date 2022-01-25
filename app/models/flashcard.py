@@ -54,6 +54,7 @@ class Flashcard(db.Model):
             "id": self.id,
             "front": self.front,
             "back": self.back,
+            "language" : self.language,
             "deck_id": self.deck_id,
             "difficulty_level" : self.difficulty_level,
             "previous_repetitions" : self.previous_repetitions,
