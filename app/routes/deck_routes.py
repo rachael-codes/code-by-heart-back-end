@@ -42,6 +42,7 @@ def deck(deck_id):
 def add_flashcard_to_deck(deck_id):
     request_data = request.get_json()
     # { "front": flashcardFront, "back": flashcardBack, "language" : language }
+    print(request_data)
 
     flashcard = Flashcard(
         front = request_data['front'],

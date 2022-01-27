@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 from app.models.deck import Deck
 from app.models.client import Client
+from app.models.flashcard import Flashcard
 
 app_bp = Blueprint('app', __name__)
 
@@ -27,7 +28,18 @@ def load_decks():
     client = Client.query.filter_by(email=request_body["email"]).first()
     if client:
         decks = Deck.query.filter_by(owner_id=client.id) 
-        response = jsonify([deck.to_json() for deck in decks])
+
+        response = []
+        for deck in decks:
+            number_of_cards = Flashcard.query.filter_by(deck_id=deck.id).count()
+            response.append({
+                "id": deck.id,
+                "name": deck.deck_name,
+                "owner_id": deck.owner_id,
+                "number_of_cards" : number_of_cards
+            })
+
+        response = jsonify(response)
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response, 200
 
@@ -64,8 +76,13 @@ def compile():
     path = "https://api.jdoodle.com/v1/execute"
     request_body = request.get_json()
     code_to_compile, language = request_body["code"], request_body["language"]
-    if language == 'python': # Note: python is special case that needs a num
+    
+    # handle special cases where language name doeesn't match up perfectly
+    if language == 'python': 
         language = 'python3'
+
+    if language == 'golang':
+        language = 'go'
 
     payload = {
         "script": f"{code_to_compile}", 
