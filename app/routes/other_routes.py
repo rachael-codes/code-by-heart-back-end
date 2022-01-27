@@ -28,18 +28,7 @@ def load_decks():
     client = Client.query.filter_by(email=request_body["email"]).first()
     if client:
         decks = Deck.query.filter_by(owner_id=client.id) 
-
-        response = []
-        for deck in decks:
-            number_of_cards = Flashcard.query.filter_by(deck_id=deck.id).count()
-            response.append({
-                "id": deck.id,
-                "name": deck.deck_name,
-                "owner_id": deck.owner_id,
-                "number_of_cards" : number_of_cards
-            })
-
-        response = jsonify(response)
+        response = jsonify([deck.to_json() for deck in decks])
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response, 200
 
