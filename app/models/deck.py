@@ -10,14 +10,20 @@ class Deck(db.Model):
     flashcards = db.relationship("Flashcard", backref="deck", lazy=True)
 
     def to_json(self):
+        num_of_cards_tuple = self.get_card_counts()
         return {
             "id": self.id,
             "name": self.deck_name,
             "owner_id": self.owner_id,
-            "number_of_cards" : self.get_number_of_cards_up_for_review()
+            "num_total_cards" : num_of_cards_tuple[0],
+            "num_cards_up_for_review" : num_of_cards_tuple[1]
         }  
     
-    def get_number_of_cards_up_for_review(self):
+    def get_card_counts(self):
+        '''
+        Returns a tuple with the number of cards in the deck AND the number
+        of cards currently up for review. 
+        '''
         up_for_review_count = 0
 
         cards = Flashcard.query.filter_by(deck_id=self.id)
@@ -25,4 +31,4 @@ class Deck(db.Model):
             if card.date_to_review <= datetime.today():
                 up_for_review_count += 1
         
-        return up_for_review_count
+        return (cards.count(), up_for_review_count)

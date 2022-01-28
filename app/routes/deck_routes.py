@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from app import db
 from app.models.flashcard import Flashcard
 from app.models.deck import Deck
-import datetime
+from datetime import datetime
 
 decks_bp = Blueprint("decks_bp", __name__, url_prefix="/decks")
 
@@ -53,7 +53,7 @@ def add_flashcard_to_deck(deck_id):
         previous_repetitions = 0,
         previous_ease_factor = 2.5,
         interval = 0,
-        date_to_review = datetime.datetime.now()
+        date_to_review = datetime.now()
     )
 
     db.session.add(flashcard)
@@ -84,13 +84,18 @@ def get_flashcards_by_deck(deck_id):
     return jsonify(flashcards_response), 200
 
 
-# # Get all flashcards by deck id that have a review date of now or earlier (in JSON format)
-# @decks_bp.route("/<deck_id>/flashcards_to_review", methods=["GET"]) 
-# def get_flashcards_to_review_by_deck(deck_id):
-#     flashcards = Flashcard.query.filter_by(deck_id=deck_id)
-#     flashcards = Flashcard.query.filter(Flashcard.date_to_review <= datetime.datetime.now())
-#     flashcards_response = [flashcard.to_json() for flashcard in flashcards]
-#     return jsonify(flashcards_response), 200
+# Get all flashcards by deck id that have a review date of now or earlier (in JSON format)
+@decks_bp.route("/<deck_id>/flashcards_to_review", methods=["GET"]) 
+def get_flashcards_to_review_by_deck(deck_id):
+    flashcards = Flashcard.query.filter_by(deck_id=deck_id)
+    
+    up_for_review = []
+    for card in flashcards:
+        if card.date_to_review <= datetime.today():
+            up_for_review.append(card.to_json())
+    
+    print(up_for_review)
+    return jsonify(up_for_review), 200
 
 
 # # Get NUMBER of flashcards by deck id that have a review date of now or earlier 
