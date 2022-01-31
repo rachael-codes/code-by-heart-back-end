@@ -21,7 +21,8 @@ def add_deck(owner_id):
 
     new_deck = Deck(
         deck_name=request_data["deck_name"],
-        owner_id=owner_id
+        owner_id=owner_id,
+        created_at=datetime.now()
     )
 
     db.session.add(new_deck)
@@ -73,7 +74,7 @@ def delete_deck(deck_id):
     return deck.to_json(), 200
 
 
-# Get all flashcards by deck id 
+# Get deck info + all flashcards by deck id 
 @decks_bp.route("/<deck_id>/flashcards", methods=["GET"]) 
 def get_flashcards_by_deck(deck_id):
     if not deck_id:

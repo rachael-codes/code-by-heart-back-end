@@ -72,7 +72,8 @@ class Flashcard(db.Model):
             "previous_repetitions" : self.previous_repetitions,
             "previous_ease_factor" : self.previous_ease_factor,
             "interval" : self.interval,
-            "date_to_review" : self.date_to_review
+            "date_to_review" : self.date_to_review,
+            # add in history
         }
 
 # Credit to https://github.com/thyagoluciano/sm2 for explanation of SM2, 
