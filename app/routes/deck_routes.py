@@ -31,13 +31,6 @@ def add_deck(owner_id):
     return new_deck.to_json(), 200
 
 
-# Get one deck 
-@decks_bp.route("/<deck_id>", methods=["GET"])
-def deck(deck_id):
-    deck = Deck.query.get(deck_id) 
-    return deck.to_json(), 200
-
-
 # Add a flashcard to a particular deck
 @decks_bp.route("/<deck_id>/flashcards", methods=["POST"])
 def add_flashcard_to_deck(deck_id):
@@ -54,13 +47,23 @@ def add_flashcard_to_deck(deck_id):
         previous_repetitions = 0,
         previous_ease_factor = 2.5,
         interval = 0,
-        date_to_review = datetime.now()
+        date_to_review = datetime.now(),
+        total_times_reviewed = 0
+        most_recent_review_date = None,
+        most_recent_difficulty_level = None
     )
 
     db.session.add(flashcard)
     db.session.commit()
 
     return flashcard.to_json(), 200
+
+
+# Get one deck 
+@decks_bp.route("/<deck_id>", methods=["GET"])
+def deck(deck_id):
+    deck = Deck.query.get(deck_id) 
+    return deck.to_json(), 200
 
 
 # Delete a deck 
@@ -97,13 +100,3 @@ def get_flashcards_to_review_by_deck(deck_id):
     
     print(up_for_review)
     return jsonify(up_for_review), 200
-
-
-# # Get NUMBER of flashcards by deck id that have a review date of now or earlier 
-# # Note: this will be for display purposes on front-end 
-# @decks_bp.route("/<deck_id>/number_of_flashcards_to_review", methods=["GET"]) 
-# def get_number_of_flashcards_to_review(deck_id):
-#     flashcards = Flashcard.query.filter_by(deck_id=deck_id)
-#     flashcards = Flashcard.query.filter(Flashcard.date_to_review <= datetime.datetime.now())
-#     flashcards_response = [flashcard.to_json() for flashcard in flashcards]
-#     return make_response(str(len(flashcards_response)), 200)
