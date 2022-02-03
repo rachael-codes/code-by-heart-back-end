@@ -6,7 +6,6 @@ import os
 from dotenv import load_dotenv
 from app.models.deck import Deck
 from app.models.client import Client
-from app.models.flashcard import Flashcard
 
 app_bp = Blueprint('app', __name__)
 
@@ -48,13 +47,30 @@ def load_decks():
 # ---------- # ---------- # ---------- # ---------- # ---------- # ---------- # 
 
 # helper used in compile route immediately below
-def clean_error_message(msg):
-    match = (re.search("jdoodle", msg))
-    ending_idx = match.span()[1]
-    return msg[ending_idx+1:]
+def clean_error_message(output, language):
+    if "output Limit reached." in output:
+        return "You reached the output limit. Did you create an infinite loop?"
+    elif "jdoodle" in output:
+        if language == 'nodejs':
+            starting_match = (re.search("Error", output))
+            starting_idx = starting_match.span()[0]
+            ending_match = (re.search("at", output))
+            ending_idx = ending_match.span()[0]
+            # print(frontend_output[starting_idx:ending_idx]) 
+            return output[starting_idx:ending_idx]
+        elif language == 'python3':
+            match = (re.search("jdoodle", output))
+            ending_idx = match.span()[1]
+            return f"\"{output[ending_idx+1:]}"
+        else: 
+            match = (re.search("jdoodle", output))
+            ending_idx = match.span()[1]
+            return output[ending_idx+1:]
+    else:
+        return output
 
 # Runs code via Jdoodle's compiler API
-@app_bp.route("/compile", methods=["POST"])
+@app_bp.route("/compile", methods=["POST"]) # localhost/compile 
 def compile():
     '''
     Purpose: Calls Jdoodle Code Compiler API
@@ -66,12 +82,9 @@ def compile():
     request_body = request.get_json()
     code_to_compile, language = request_body["code"], request_body["language"]
     
-    # handle special cases where language name doeesn't match up perfectly
+    # handle special case (python3 == python)
     if language == 'python': 
         language = 'python3'
-
-    if language == 'golang':
-        language = 'go'
 
     payload = {
         "script": f"{code_to_compile}", 
@@ -83,22 +96,10 @@ def compile():
     }
     headers = {"Content-Type" : "application/json"}
     response = requests.post(url=path, headers=headers, data=json.dumps(payload))
+    output = response.json()["output"] 
+    return clean_error_message(output, language)
 
-    # get either code output or error message output; if error message, shorten it 
-    frontend_output = response.json()["output"] 
-    if "jdoodle" in frontend_output:
-        if language == 'python3': # as usual, python is an exception
-            return f"\"{clean_error_message(frontend_output)}"
-        else:
-            return clean_error_message(frontend_output)
 
-    # return custom message in case of infinite loop 
-    if "output Limit reached." in frontend_output:
-        return "You reached your output limit. Did you create an infinite loop?"
-
-    # TO-DO: handle error so something still gets returned to front-end in case of 404
-    print(frontend_output) 
-    return frontend_output
 
 
 

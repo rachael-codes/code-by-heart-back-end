@@ -10,11 +10,11 @@ class Flashcard(db.Model):
     deck_id = db.Column(db.Integer, db.ForeignKey("deck.id"))
 
     # attributes that get updated by spaced repetition algo 
-    difficulty_level = db.Column(db.Integer) # 0 to start then will update to whatever user's choice is (on a scale of 0 to 5)
-    previous_repetitions = db.Column(db.Integer) # 0 to start; will be incremented by 1 or reset to 0 based on user's choice
-    previous_ease_factor = db.Column(db.Float) # 2.5 to start; will be recalculated based on user's choice
-    interval = db.Column(db.Integer) # 0 to start; will be recalculated based on user's choice; indicates the number of days to wait between reviews
-    date_to_review = db.Column(db.DateTime) # date/time of card creation to start; will be recalculated based on interval attribute (immediately above) 
+    difficulty_level = db.Column(db.Integer) # 0 to start
+    previous_repetitions = db.Column(db.Integer) # 0 to start
+    previous_ease_factor = db.Column(db.Float) # 2.5 to start 
+    interval = db.Column(db.Integer) # 0 to start
+    date_to_review = db.Column(db.DateTime) # time of card creation to start
     
     # attributes tracking the flashcard's history 
     total_times_reviewed = db.Column(db.Integer)
@@ -49,7 +49,7 @@ class Flashcard(db.Model):
             "Easy" : 4,
             "Medium" : 3,
             "Hard" : 1,
-            "Too hard/review again!" : 0
+            "Review again!" : 0
         }
         difficulty_level = DIFFICULTY_LEVEL_MAP[user_difficulty_choice]
 
@@ -82,7 +82,7 @@ class Flashcard(db.Model):
             self.interval = 1 # reset interval to 1
             # no change in ease factor 
 
-        # If user chooses "too hard/review again!"...  
+        # If user chooses "again!" (it's too hard)...  
         else: 
             self.previous_repetitions = 0 # reset reps to 0
             self.interval = 0 # reset interval to 1

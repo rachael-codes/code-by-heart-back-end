@@ -6,14 +6,6 @@ from datetime import datetime
 
 decks_bp = Blueprint("decks_bp", __name__, url_prefix="/decks")
 
-# Get a client's decks
-@decks_bp.route("/<owner_id>", methods=["GET"])
-def decks(owner_id):
-    decks = Deck.query.filter_by(owner_id=owner_id) 
-    deck_response = [deck.to_json() for deck in decks]
-    return jsonify(deck_response), 200
-
-
 # Add a deck to client's decks
 @decks_bp.route("/<owner_id>", methods=["POST"])
 def add_deck(owner_id):
@@ -36,7 +28,6 @@ def add_deck(owner_id):
 def add_flashcard_to_deck(deck_id):
     request_data = request.get_json()
     # { "front": flashcardFront, "back": flashcardBack, "language" : language }
-    print(request_data)
 
     flashcard = Flashcard(
         front = request_data['front'],
@@ -49,21 +40,12 @@ def add_flashcard_to_deck(deck_id):
         interval = 0,
         date_to_review = datetime.now(),
         total_times_reviewed = 0
-        most_recent_review_date = None,
-        most_recent_difficulty_level = None
     )
 
     db.session.add(flashcard)
     db.session.commit()
 
     return flashcard.to_json(), 200
-
-
-# Get one deck 
-@decks_bp.route("/<deck_id>", methods=["GET"])
-def deck(deck_id):
-    deck = Deck.query.get(deck_id) 
-    return deck.to_json(), 200
 
 
 # Delete a deck 
@@ -77,7 +59,7 @@ def delete_deck(deck_id):
     return deck.to_json(), 200
 
 
-# Get deck info + all flashcards by deck id 
+# Get all flashcards by deck id 
 @decks_bp.route("/<deck_id>/flashcards", methods=["GET"]) 
 def get_flashcards_by_deck(deck_id):
     if not deck_id:
