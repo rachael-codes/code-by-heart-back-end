@@ -26,7 +26,9 @@ def load_decks():
     # Check if user is already in the DB, and if so, load their decks...
     client = Client.query.filter_by(email=request_body["email"]).first()
     if client:
-        decks = Deck.query.filter_by(owner_id=client.id).order_by(Deck.created_at)
+        decks = Deck.query.filter_by(owner_id=client.id) 
+        if len(decks) > 1:
+            decks = decks.order_by(Deck.created_at)
         response = jsonify([deck.to_json() for deck in decks])
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response, 200
