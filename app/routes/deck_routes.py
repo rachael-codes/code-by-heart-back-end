@@ -13,8 +13,7 @@ def add_deck(owner_id):
 
     new_deck = Deck(
         deck_name=request_data["deck_name"],
-        owner_id=owner_id,
-        created_at=datetime.now()
+        owner_id=owner_id
     )
 
     db.session.add(new_deck)
