@@ -7,7 +7,7 @@ class Deck(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     deck_name = db.Column(db.String)
     owner_id = db.Column(db.String, db.ForeignKey("client.id"))
-    created_at = db.Column(db.DateTime)
+    # created_at = db.Column(db.DateTime)
     flashcards = db.relationship("Flashcard", backref="deck", lazy=True)
 
     def to_json(self):
@@ -16,7 +16,7 @@ class Deck(db.Model):
             "id": self.id,
             "name": self.deck_name,
             "owner_id": self.owner_id,
-            "created_at" : self.created_at,
+            # "created_at" : self.created_at,
             "num_total_cards" : num_of_cards_tuple[0],
             "num_cards_up_for_review" : num_of_cards_tuple[1]
         }  

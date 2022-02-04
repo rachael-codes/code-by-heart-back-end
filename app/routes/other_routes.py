@@ -28,7 +28,7 @@ def load_decks():
     if client:
         decks = Deck.query.filter_by(owner_id=client.id) 
         if decks.count() > 1:
-            decks = decks.order_by(Deck.created_at)
+            decks = decks.order_by(Deck.id)
         response = jsonify([deck.to_json() for deck in decks])
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response, 200
