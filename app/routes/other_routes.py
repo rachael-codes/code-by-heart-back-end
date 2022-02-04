@@ -70,7 +70,7 @@ def clean_error_message(output, language):
         return output
 
 # Runs code via Jdoodle's compiler API
-@app_bp.route("/compile", methods=["POST"]) # localhost/compile 
+@app_bp.route("/compile", methods=["POST"]) 
 def compile():
     '''
     Purpose: Calls Jdoodle Code Compiler API
