@@ -33,7 +33,7 @@ def load_decks():
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response, 200
 
-    # If user is not already in the DB, add them in, and return an empty decks array...
+    # If user is not already in DB, add them in + return empty decks array...
     new_client = Client(
         id = request_body["uid"],
         email = request_body["email"],
