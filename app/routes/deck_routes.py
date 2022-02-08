@@ -66,6 +66,8 @@ def get_flashcards_by_deck(deck_id):
         return jsonify({"message" : "The user hasn't selected a deck yet."})
 
     flashcards = Flashcard.query.filter_by(deck_id=deck_id)
+    if flashcards.count() > 1:
+        flashcards = flashcards.order_by(Flashcard.id)
     flashcards_response = [flashcard.to_json() for flashcard in flashcards]
     return jsonify(flashcards_response), 200
 
