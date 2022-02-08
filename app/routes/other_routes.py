@@ -8,7 +8,6 @@ from app.models.deck import Deck
 from app.models.client import Client
 
 app_bp = Blueprint('app', __name__)
-ter
 @app_bp.route("/load-user-decks", methods=["POST"])
 def load_decks():
     '''
