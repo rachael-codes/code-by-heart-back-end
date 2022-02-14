@@ -21,7 +21,7 @@ JDOODLE_CLIENT_ID=whatever_your_client_id_is
 JDOODLE_CLIENT_SECRET=whatever_your_client_secret_is
 ```
 5. Create a local PostgreSQL database called `code_by_heart`, and then add to the .env file the environment variable `SQLALCHEMY_DATABASE_URI` to hold the path to this database. For example: `SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://postgres:postgres@localhost:5432/code_by_heart`
-6. Run `flask db init` and `flask db migrate`, and ensure tables appear in the `code_by_heart` database: `client`, `deck` and `flashcard`. 
+6. Run `flask db init` and `flask db migrate`, and ensure three tables appear in the `code_by_heart` database: `client`, `deck` and `flashcard`. 
 7. To start up the backend in development mode, run: `flask_env=development && flask run`
 
 ### Front-end 
