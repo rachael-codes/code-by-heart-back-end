@@ -1,7 +1,7 @@
 # Code by Heart
 
 ## Introduction
-Code By Heart is a flashcard app that lets you create and save decks of flashcards, and then later review these cards at optimally-spaced intervals according to a spaced repetition algorithm (which is based on [SM-2] (https://www.supermemo.com/en/archives1990-2015/english/ol/sm2) ). Each flashcard can take the form of either a code snippet (in a variety of programming languages) or plain text. Programming languages supported: Python, JavaScript, Go, C++, C, C#, Objective C, Ruby, Java, Scala, Swift, Rust, Kotlin, Elixir. 
+Code By Heart is a flashcard app that lets you create and save decks of flashcards, and then later review these cards at optimally-spaced intervals according to a spaced repetition algorithm (based on SM-2: https://www.supermemo.com/en/archives1990-2015/english/ol/sm2). Each flashcard can take the form of either a code snippet (in a variety of programming languages) or plain text. Programming languages supported: Python, JavaScript, Go, C++, C, C#, Objective C, Ruby, Java, Scala, Swift, Rust, Kotlin, Elixir. 
 
 ## Demo 
 
