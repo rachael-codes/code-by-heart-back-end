@@ -14,7 +14,7 @@ https://user-images.githubusercontent.com/71302837/153951055-03ff59a4-f79d-452a-
 1. Clone this repository. 
 2. Set up a virtual environment: `python3 -m venv venv` and `source venv/bin/activate`. 
 3. Install the requirements: `pip install -r requirements.txt`. 
-4. Get a free API key from: https://www.jdoodle.com/, and then create a `.env` file with:
+4. Get a free API key from https://www.jdoodle.com/. Keep this key private, and create a .env file with:
 ```
 JDOODLE_CLIENT_ID=whatever_your_client_id_is
 JDOODLE_CLIENT_SECRET=whatever_your_client_secret_is
@@ -30,4 +30,4 @@ JDOODLE_CLIENT_SECRET=whatever_your_client_secret_is
 4. To start up the frontend, run `yarn start` (or npm).  
 
 ### Firebase Authentication 
-For user authentication, create a Google Firebase project for Code By Heart. Within it, enable Google as a sign-in method, and add your local host as an authorized domain. 
+For user authentication, create a Google Firebase project for Code By Heart. Within it, enable Google as a sign-in method, and add your local host as an authorized domain. Update the `src/firebase/firebase.utils.js` file in the frontend repository with your API key. This key may be exposed to the public (see here: https://medium.com/@paulbreslin/is-it-safe-to-expose-your-firebase-api-key-to-the-public-7e5bd01e637b).
