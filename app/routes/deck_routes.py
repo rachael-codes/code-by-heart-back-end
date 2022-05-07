@@ -80,5 +80,4 @@ def get_flashcards_to_review_by_deck(deck_id):
         if card.date_to_review <= datetime.today():
             up_for_review.append(card.to_json())
     
-    print(up_for_review)
     return jsonify(up_for_review), 200
