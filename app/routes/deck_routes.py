@@ -26,8 +26,6 @@ def add_deck(owner_id):
 @decks_bp.route("/<deck_id>/flashcards", methods=["POST"])
 def add_flashcard_to_deck(deck_id):
     request_data = request.get_json()
-    print(request_data)
-    # { "front": flashcardFront, "back": flashcardBack, "language" : language }
 
     flashcard = Flashcard(
         front = request_data['front'],

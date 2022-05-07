@@ -13,7 +13,6 @@ def delete_flashcard(flashcard_id):
 
     db.session.delete(flashcard)
     db.session.commit()
-
     return make_response("flashcard deleted", 200)
 
 
@@ -23,11 +22,10 @@ def update_flashcard_spaced_repetition(flashcard_id):
     request_data = request.get_json()
     flashcard = Flashcard.query.get(flashcard_id)
 
-    # either update front msg, back msg or spaced repetition + history attrs
     if "front" in request_data: 
         flashcard.front = request_data["front"]
     elif "back" in request_data:
-        flashcard.back= request_data["back"]
+        flashcard.back = request_data["back"]
     else: 
         user_difficulty_choice = request_data["difficultyString"] 
         flashcard.update_history(user_difficulty_choice)
