@@ -5,7 +5,7 @@ from app.models.deck import Deck
 from app.models.flashcard import Flashcard
 from app import create_app
 from app import db
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Fixtures 
 @pytest.fixture
@@ -23,7 +23,7 @@ def app():
 def client(app):
     return app.test_client()
 
-# Mock client with a single deck containing a single Python flashcard 
+# Mock client with a single deck containing a single Python flashcard.
 @pytest.fixture
 def client_a(app):
     new_client = Client(
@@ -57,7 +57,8 @@ def client_a(app):
     db.session.commit()
 
 # Mock client with two decks containing two Ruby flashcards in first deck and 
-# zero flashcards in second deck 
+# zero flashcards in second deck. One flashcard is up-for-review now, and one is
+# up-for-review later. 
 @pytest.fixture
 def client_b(app):
     new_client = Client(
@@ -107,7 +108,7 @@ def client_b(app):
         previous_repetitions = 0,
         previous_ease_factor = 2.5,
         interval = 0,
-        date_to_review = datetime.now(),
+        date_to_review = datetime.now() + timedelta(1),
         total_times_reviewed = 0
     )
     db.session.add(new_flashcard_2)
@@ -185,6 +186,29 @@ def test_get_flashcards_two_saved_flashcards(client, client_b):
     assert response_body[1]["previous_repetitions"] == 0 
     assert response_body[1]["previous_ease_factor"] == 2.5
 
+def test_get_flashcards_up_for_review_one_up_for_review(client, client_b):
+    response = client.get("decks/2/flashcards_to_review")
+    response_body = response.get_json()
+    
+    assert response.status_code == 200
+    assert len(response_body) == 1 
+    assert response_body[0]["front"] == "test-deck-1-front-1"
+    assert response_body[0]["back"] == "test-deck-1-back-1"
+    assert response_body[0]["language"] == "ruby"
+    assert response_body[0]["previous_repetitions"] == 0 
+    assert response_body[0]["previous_ease_factor"] == 2.5
+
+def test_get_flashcards_up_for_review_none_up_for_review(client, client_a):
+    client.put("flashcards/1", data=json.dumps({ "difficultyString": 
+    "Very Easy" }), headers={"Content-Type": "application/json"})
+      
+    response = client.get("decks/1/flashcards_to_review")
+    response_body = response.get_json()
+    
+    assert response.status_code == 200
+    assert len(response_body) == 0
+    assert response_body == []
+
 def test_add_new_client_no_decks(client):
     new_client_data = {
         "uid" : "a new client",
@@ -221,3 +245,11 @@ def test_add_flashcard_to_deck(client, client_b):
     assert response_body["language"] == "kotlin"
     assert response_body["previous_repetitions"] == 0 
     assert response_body["previous_ease_factor"] == 2.5
+
+def test_delete_deck_deck_not_found(client, client_a):
+    response = client.delete("decks/10")
+    assert response.status_code == 404
+
+def test_delete_deck_deck_found(client, client_a):
+    response = client.delete("decks/1")
+    assert response.status_code == 200

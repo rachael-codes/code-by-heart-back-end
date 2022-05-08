@@ -56,7 +56,7 @@ def client_a(app):
     db.session.add(new_flashcard)
     db.session.commit()
 
-# Tests for editing front and/or back of flashcard 
+# Tests for editing front or back of flashcard 
 def test_edit_flashcard_front(client, client_a):
     response = client.put(
       "flashcards/1", 
@@ -78,6 +78,15 @@ def test_edit_flashcard_back(client, client_a):
     assert response.status_code == 200
     assert response_body["front"] == "test-front"
     assert response_body["back"] == "edited back"
+
+# Tests for deleting a flashcard 
+def test_delete_flashcard_flashcard_not_found(client, client_a):
+    response = client.delete("flashcards/10")
+    assert response.status_code == 404
+
+def test_delete_flashcard_flashcard_found(client, client_a):
+    response = client.delete("flashcards/1")
+    assert response.status_code == 200
 
 # Tests for updating spaced repetition attributes 
 def test_user_difficulty_choice_review_again_once(client, client_a):

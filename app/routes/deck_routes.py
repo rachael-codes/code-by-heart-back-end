@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 from app import db
 from app.models.flashcard import Flashcard
 from app.models.deck import Deck
@@ -58,11 +58,12 @@ def add_flashcard_to_deck(deck_id):
 @decks_bp.route("/<deck_id>", methods=["DELETE"])
 def delete_deck(deck_id):
     deck = Deck.query.get(deck_id)
+    if not deck: 
+        return make_response("deck not found", 404)
 
     db.session.delete(deck)
     db.session.commit()
-
-    return deck.to_json(), 200
+    return make_response("deck deleted", 200)
 
 
 # Get all flashcards by deck id 
