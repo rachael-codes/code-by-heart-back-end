@@ -185,6 +185,22 @@ def test_get_flashcards_two_saved_flashcards(client, client_b):
     assert response_body[1]["previous_repetitions"] == 0 
     assert response_body[1]["previous_ease_factor"] == 2.5
 
+def test_add_new_client_no_decks(client):
+    new_client_data = {
+        "uid" : "a new client",
+        "email" : "new-client@gmail.com",
+        "displayName" : "new-client-display-name"
+    }
+
+    response = client.post(
+      "/load-user-decks", 
+      data=json.dumps(new_client_data),
+      headers={"Content-Type": "application/json"})
+    response_body = response.get_json()
+  
+    assert response.status_code == 200
+    assert response_body == []
+
 def test_add_flashcard_to_deck(client, client_b):
     new_flashcard_data = {
         "id" : 1,
