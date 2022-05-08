@@ -23,7 +23,7 @@ def app():
 def client(app):
     return app.test_client()
 
-# Test client with a single deck containing a single Python flashcard 
+# Mock client with a single deck containing a single Python flashcard 
 @pytest.fixture
 def client_a(app):
     new_client = Client(
@@ -56,7 +56,7 @@ def client_a(app):
     db.session.add(new_flashcard)
     db.session.commit()
 
-# Test client with two decks containing two Ruby flashcards in first deck and 
+# Mock client with two decks containing two Ruby flashcards in first deck and 
 # zero flashcards in second deck 
 @pytest.fixture
 def client_b(app):
