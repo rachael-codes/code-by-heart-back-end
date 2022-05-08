@@ -9,7 +9,6 @@ db = SQLAlchemy()
 migrate = Migrate()
 load_dotenv()
 
-
 def create_app(test_config=None):
     app = Flask(__name__)
     

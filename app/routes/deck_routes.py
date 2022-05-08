@@ -6,6 +6,14 @@ from datetime import datetime
 
 decks_bp = Blueprint("decks_bp", __name__, url_prefix="/decks")
 
+# Get a particular client's decks 
+@decks_bp.route("/<owner_id>", methods=["GET"])
+def get_deck(owner_id):
+    decks = Deck.query.filter_by(owner_id=owner_id)
+    decks_response = [deck.to_json() for deck in decks]
+    return jsonify(decks_response), 200
+
+
 # Add a deck to client's decks
 @decks_bp.route("/<owner_id>", methods=["POST"])
 def add_deck(owner_id):
